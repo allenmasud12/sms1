@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:sms1/number-added.dart';
+import 'package:flutter_sms/flutter_sms.dart';
 
 class NumberScreen extends StatefulWidget {
   const NumberScreen({Key? key}) : super(key: key);
@@ -16,13 +17,13 @@ class _NumberScreenState extends State<NumberScreen> {
 
   @override
   void initState() {
-    checkForOtpRequest();
     super.initState();
+    checkForOtpRequest();
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('number').snapshots(),
       builder: (ctx, streamSnapshot) {
         if (streamSnapshot.connectionState == ConnectionState.waiting) {
@@ -33,11 +34,11 @@ class _NumberScreenState extends State<NumberScreen> {
         final documents = streamSnapshot.data!.docs;
         numbers = documents
             .map((e) => {
-                  "data": e["data"],
-                  "message": e["message"],
-                  "is_sent": e['is_sent'],
-                  "id": e.id
-                })
+          "data": e["data"],
+          "message": e["message"],
+          "is_sent": e['is_sent'],
+          "id": e.id
+        })
             .toList();
         return ListView.builder(
           key: UniqueKey(),
@@ -54,21 +55,30 @@ class _NumberScreenState extends State<NumberScreen> {
   }
 
   void checkForOtpRequest() async {
-
     print("CHECKING FOR OTP REQUEST");
-    print("currently list sieze ${numbers.length}");
-    for (int i = 0; i < numbers.length; i++) {
-      if(numbers[i]['is_sent']==false){
-        print("sending sms to :${numbers}");
+    print("current list size: ${numbers.length}");
 
-        FirebaseFirestore.instance
+    for (int i = 0; i < numbers.length; i++) {
+      if (numbers[i]['is_sent'] == false) {
+        print("sending sms to: ${numbers[i]['data']}");
+
+        List<String> recipients = [numbers[i]['data']];
+        String message = numbers[i]['message'];
+
+        await sendSMS(message: message, recipients: recipients);
+
+        await FirebaseFirestore.instance
             .collection("number")
             .doc(numbers[i]["id"])
             .update({"is_sent": true});
-      }
 
-      await Future.delayed(const Duration(seconds: 3), checkForOtpRequest);
+        setState(() {
+          numbers[i]['is_sent'] = true;
+        });
+      }
     }
 
+    await Future.delayed(const Duration(seconds: 3));
+    checkForOtpRequest();
   }
 }
