@@ -9,18 +9,22 @@ class NewMessages extends StatefulWidget {
 }
 
 class _NewMessagesState extends State<NewMessages> {
-final controller = TextEditingController();
-final controller1 = TextEditingController();
-var enterData ='';
-var enterMessage ='';
-void inputData() async{
-FocusScope.of(context).unfocus();
-FirebaseFirestore.instance.collection('data').add({
-  'data': enterData,
-});
-controller.clear();
-controller1.clear();
-}
+  final controller = TextEditingController();
+  final controller1 = TextEditingController();
+  var enterData = '';
+  var enterMessage = '';
+
+  void inputData() async {
+    FocusScope.of(context).unfocus();
+    FirebaseFirestore.instance.collection('number').add({
+      'data': enterData.startsWith("01") ? "+88$enterData" : enterData,
+      'is_sent': false,
+      'message': "OTP: $enterMessage"
+    });
+    controller.clear();
+    controller1.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -33,9 +37,9 @@ controller1.clear();
             keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: 'Number'),
             onChanged: (value) {
-            setState(() {
-              enterData = value;
-            });
+              setState(() {
+                enterData = value;
+              });
             },
           ),
           TextField(
@@ -48,7 +52,7 @@ controller1.clear();
             },
           ),
           TextButton(
-            onPressed: enterData.trim().isEmpty? null : inputData,
+            onPressed: enterData.trim().isEmpty ? null : inputData,
             child: Text('Save'),
           ),
         ],
