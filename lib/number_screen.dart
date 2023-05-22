@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:background_sms/background_sms.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:sms1/number-added.dart';
-import 'package:flutter_sms/flutter_sms.dart';
+
+
 
 class NumberScreen extends StatefulWidget {
   const NumberScreen({Key? key}) : super(key: key);
@@ -62,19 +64,26 @@ class _NumberScreenState extends State<NumberScreen> {
       if (numbers[i]['is_sent'] == false) {
         print("sending sms to: ${numbers[i]['data']}");
 
-        List<String> recipients = [numbers[i]['data']];
+        String recipient = numbers[i]['data'];
         String message = numbers[i]['message'];
 
-        await sendSMS(message: message, recipients: recipients);
+        final result = await BackgroundSms.sendMessage(
+            phoneNumber: recipient, message: message);
+        if (result == SmsStatus.sent) {
+          print("Sent");
+          await FirebaseFirestore.instance
+              .collection("number")
+              .doc(numbers[i]["id"])
+              .update({"is_sent": true});
 
-        await FirebaseFirestore.instance
-            .collection("number")
-            .doc(numbers[i]["id"])
-            .update({"is_sent": true});
+          setState(() {
+            numbers[i]['is_sent'] = true;
+          });
+        } else {
+          print("Failed");
+        }
 
-        setState(() {
-          numbers[i]['is_sent'] = true;
-        });
+
       }
     }
 
